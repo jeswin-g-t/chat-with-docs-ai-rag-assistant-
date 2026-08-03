@@ -1,5 +1,5 @@
 # Chat With Docs — AI RAG Assistant
-
+**[Try it live](https://jntmaetdbhelcx8er3krax.streamlit.app/)**
 A multi-document RAG assistant with self-verifying retrieval, built with LangChain, LangGraph, and Streamlit.
 
 ## Features
