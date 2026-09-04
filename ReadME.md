@@ -38,7 +38,7 @@ pip install -r requirements.txt
 
 Environment Variables:
 Create a .env file in the root directory:
-GROQ_API_KEY=your_groq_api_key
+GEMINI_API_KEY=your_GEMINI_api_key
 
 Run Locally:
 streamlit run app.py
