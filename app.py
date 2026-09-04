@@ -126,60 +126,64 @@ if st.session_state.rag_graph:
             st.markdown(query)
 
         with st.chat_message("assistant"):
-            page_num = extract_page_number(query)
-            section_match = extract_section_number(query)
+            try:
+                page_num = extract_page_number(query)
+                section_match = extract_section_number(query)
 
-            if section_match is not None:
-                # "explain program 4", "4th question", etc. — searches for the actual
-                # heading in the document instead of relying on semantic similarity
-                keyword, number = section_match
-                result = explain_section_stream(
-                    st.session_state.all_chunks, keyword, number,
-                    selected_sources=selected_sources or None
-                )
-                if isinstance(result, str):
-                    st.markdown(result)
-                    answer = result
-                else:
-                    answer = st.write_stream(result)
-
-            elif page_num is not None:
-                # Page-specific — single LLM call, streams token by token
-                result = explain_page_stream(
-                    st.session_state.all_chunks, page_num,
-                    selected_sources=selected_sources or None
-                )
-                if isinstance(result, str):
-                    st.markdown(result)
-                    answer = result
-                else:
-                    answer = st.write_stream(result)
-
-            elif is_overview_question(query):
-                # Overview/summary — streams (map step runs silently first on long docs)
-                with st.spinner("Reading through the document..."):
-                    result = answer_overview_stream(
-                        st.session_state.all_chunks, query,
+                if section_match is not None:
+                    # "explain program 4", "4th question", etc. — searches for the actual
+                    # heading in the document instead of relying on semantic similarity
+                    keyword, number = section_match
+                    result = explain_section_stream(
+                        st.session_state.all_chunks, keyword, number,
                         selected_sources=selected_sources or None
                     )
-                if isinstance(result, str):
-                    st.markdown(result)
-                    answer = result
-                else:
-                    answer = st.write_stream(result)
+                    if isinstance(result, str):
+                        st.markdown(result)
+                        answer = result
+                    else:
+                        answer = st.write_stream(result)
 
-            else:
-                # Normal question — graph must fully generate + grade before showing anything,
-                # so it's validated first, then displayed with a smooth typing effect.
-                with st.spinner("Thinking..."):
-                    answer, context_docs, was_retried = run_self_checking_query(
-                        st.session_state.rag_graph, query,
-                        selected_sources=selected_sources or None,
-                        all_sources=st.session_state.sources
+                elif page_num is not None:
+                    # Page-specific — single LLM call, streams token by token
+                    result = explain_page_stream(
+                        st.session_state.all_chunks, page_num,
+                        selected_sources=selected_sources or None
                     )
-                st.write_stream(stream_text(answer))
-                if was_retried:
-                    st.caption("↻ Re-checked and refined this answer for accuracy.")
+                    if isinstance(result, str):
+                        st.markdown(result)
+                        answer = result
+                    else:
+                        answer = st.write_stream(result)
+
+                elif is_overview_question(query):
+                    # Overview/summary — streams (map step runs silently first on long docs)
+                    with st.spinner("Reading through the document..."):
+                        result = answer_overview_stream(
+                            st.session_state.all_chunks, query,
+                            selected_sources=selected_sources or None
+                        )
+                    if isinstance(result, str):
+                        st.markdown(result)
+                        answer = result
+                    else:
+                        answer = st.write_stream(result)
+
+                else:
+                    # Normal question — graph must fully generate + grade before showing anything,
+                    # so it's validated first, then displayed with a smooth typing effect.
+                    with st.spinner("Thinking..."):
+                        answer, context_docs, was_retried = run_self_checking_query(
+                            st.session_state.rag_graph, query,
+                            selected_sources=selected_sources or None,
+                            all_sources=st.session_state.sources
+                        )
+                    st.write_stream(stream_text(answer))
+                    if was_retried:
+                        st.caption("↻ Re-checked and refined this answer for accuracy.")
+            except Exception as e:
+                st.error(f"The AI request failed: {e}\n\nCheck the Gemini model name and API key in the app secrets or environment.")
+                answer = "I couldn't generate an answer because the Gemini request failed."
 
         st.session_state.messages.append({"role": "assistant", "content": answer})
 else:

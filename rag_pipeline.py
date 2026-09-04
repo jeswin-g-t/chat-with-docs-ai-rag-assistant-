@@ -7,7 +7,7 @@ from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_classic.chains import create_retrieval_chain
 from langchain_classic.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
@@ -23,14 +23,21 @@ MAX_RETRIES = 1  # how many times the graph is allowed to rewrite + retry retrie
 
 
 def get_llm():
-    key = os.getenv("GROQ_API_KEY")
+    key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     if not key:
         import streamlit as st
-        key = st.secrets.get("GROQ_API_KEY")
-    return ChatGroq(
-        model="llama-3.3-70b-versatile",
+        key = st.secrets.get("GEMINI_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
+
+    if not key:
+        raise ValueError(
+            "Missing Gemini API key. Add GEMINI_API_KEY or GOOGLE_API_KEY to the .env file or Streamlit secrets."
+        )
+
+    model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    return ChatGoogleGenerativeAI(
+        model=model_name,
         temperature=0.3,
-        api_key=key
+        google_api_key=key
     )
 
 
